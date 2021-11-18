@@ -1,0 +1,60 @@
+project_name: "venv"
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - id: "venv"
+    dir: "."
+    main: ".cmd/venv"
+    binary: "venv"
+    ldflags:
+      - -s -w
+      - -X github.com/FollowTheProcess/venv/cli/cmd.version={{.Version}}
+      - -X github.com/FollowTheProcess/venv/cli/cmd.commit={{.Commit}}
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - 386
+      - amd64
+      - arm64
+
+brews:
+  - goarm: 6
+    tap:
+      owner: "FollowTheProcess"
+      name: homebrew-tap
+      token: "{{.Env.HOMEBREW_TAP_TOKEN}}"
+    commit_author:
+      name: "Tom Fleet"
+      email: "tomfleet2018@gmail.com"
+    homepage: "https://github.com/FollowTheProcess/venv"
+    description: "CLI to take the pain out of python virtual environments."
+    license: "Apache Software License 2.0"
+    install: |
+      bin.install "venv"
+    test: |
+      "#{bin}/venv version"
+
+archives:
+  - replacements:
+      darwin: Darwin
+      linux: Linux
+      windows: Windows
+      386: i386
+      amd64: x86_64
+
+checksum:
+  name_template: "checksums.txt"
+
+snapshot:
+  name_template: "{{ .Tag }}-next"
+
+changelog:
+  # The changelog is handled by release drafter
+  skip: true
