@@ -5,7 +5,7 @@
 [![GitHub](https://img.shields.io/github/v/release/FollowTheProcess/venv?logo=github&sort=semver)](https://github.com/FollowTheProcess/venv)
 [![CI](https://github.com/FollowTheProcess/venv/workflows/CI/badge.svg)](https://github.com/FollowTheProcess/venv/actions?query=workflow%3ACI)
 
-CLI to take the pain out of python virtual environments.
+CLI to take the pain out of python virtual environments 🛠
 
 * Free software: Apache Software License 2.0
 

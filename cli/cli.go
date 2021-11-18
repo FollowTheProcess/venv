@@ -38,8 +38,8 @@ Examples:
 $ venv
 
 Flags:
-  --help      Help for py
-  --version   Show venv's version info
+  -h, --help      Help for py
+  -v, --version   Show venv's version info
 
 Environment Variables:
   VENV_DEBUG   If set to anything will print debug information to stderr
@@ -82,7 +82,7 @@ func (a *App) Version() {
 	fmt.Fprintf(a.Stdout, "%s: %s\n", sha, commit)
 }
 
-func (a *App) Run(args []string) error {
-	fmt.Fprintf(a.Stdout, "App.Run() called with arguments: %v\n", args)
+func (a *App) Run() error {
+	fmt.Fprintln(a.Stdout, "App.Run was called")
 	return nil
 }

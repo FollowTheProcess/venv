@@ -20,12 +20,12 @@ builds:
       - darwin
       - windows
     goarch:
-      - 386
+      - "386"
       - amd64
       - arm64
 
 brews:
-  - goarm: 6
+  - goarm: "6"
     tap:
       owner: "FollowTheProcess"
       name: homebrew-tap
@@ -39,7 +39,7 @@ brews:
     install: |
       bin.install "venv"
     test: |
-      "#{bin}/venv version"
+      "#{bin}/venv --version"
 
 archives:
   - replacements:
