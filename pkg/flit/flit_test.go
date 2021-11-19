@@ -1,4 +1,4 @@
-package poetry
+package flit
 
 import (
 	"fmt"
@@ -43,25 +43,25 @@ func assertCorrectArgs(expected, args []string) {
 // it's used in the std lib to test exec
 // see: https://npf.io/2015/06/testing-exec-command/
 func fakeExecCommand(command string, args ...string) *exec.Cmd {
-	cs := []string{"-test.run=TestPoetryHelperProcess", "--", command}
+	cs := []string{"-test.run=TestFlitHelperProcess", "--", command}
 	cs = append(cs, args...)
 
 	cmd := exec.Command(os.Args[0], cs...)
 	// By passing env variables like this, we can control the behaviour of our
 	// mocked command
 	// For example, have it return a non-zero exit code etc.
-	tc := "POETRY_TEST_CASE=" + testCase
-	cmd.Env = []string{"GO_WANT_POETRY_HELPER_PROCESS=1", tc}
+	tc := "FLIT_TEST_CASE=" + testCase
+	cmd.Env = []string{"GO_WANT_FLIT_HELPER_PROCESS=1", tc}
 	return cmd
 }
 
 func setUp(testcase string) {
-	poetryCommand = fakeExecCommand
+	flitCommand = fakeExecCommand
 	testCase = testcase
 }
 
 func tearDown() {
-	poetryCommand = exec.Command
+	flitCommand = exec.Command
 }
 
 // This is the main helper process for external command tests. It first checks whether or not go test wants to use it
@@ -73,18 +73,18 @@ func tearDown() {
 // knows what to do
 // i.e. return a 0 exit code and a success message to verify our happy path, or a non-zero exit code
 // and a message to stderr to test our error handling
-func TestPoetryHelperProcess(t *testing.T) {
+func TestFlitHelperProcess(t *testing.T) {
 	// Tell go test to use this helper if env var is set
-	if os.Getenv("GO_WANT_POETRY_HELPER_PROCESS") != "1" {
+	if os.Getenv("GO_WANT_FLIT_HELPER_PROCESS") != "1" {
 		return
 	}
 
 	// First separate the go test args from what we actually want
 	args := extractCmdArgs(os.Args)
 
-	switch os.Getenv("POETRY_TEST_CASE") {
+	switch os.Getenv("FLIT_TEST_CASE") {
 	case "install_success":
-		expectedArgs := []string{"poetry", "install"}
+		expectedArgs := []string{"flit", "install", "--deps", "develop", "--symlink", "--python", ".venv/bin/python"}
 		assertCorrectArgs(expectedArgs, args)
 
 	case "install_error":
@@ -121,23 +121,23 @@ func TestInstall(t *testing.T) {
 	}
 }
 
-func TestIsPoetryFile(t *testing.T) {
+func TestIsflitFile(t *testing.T) {
 	t.Run("true if content is there", func(t *testing.T) {
 		af := afero.Afero{Fs: afero.NewMemMapFs()}
 
-		poetryContent := `[build-system]
-	requires = ["poetry-core>=1.0.0"]
-	build-backend = "poetry.core.masonry.api"
+		flitContent := `[build-system]
+	requires = ["flit"]
+	build-backend = "flit.buildapi"
 	`
 
-		err := af.WriteFile("pyproject.toml", []byte(poetryContent), 0o755)
+		err := af.WriteFile("pyproject.toml", []byte(flitContent), 0o755)
 		if err != nil {
 			t.Fatalf("could not create file: %v", err)
 		}
 
-		got, err := IsPoetryFile(af, "pyproject.toml")
+		got, err := IsFlitFile(af, "pyproject.toml")
 		if err != nil {
-			t.Errorf("IsPoetryFile returned an error: %v", err)
+			t.Errorf("IsFlitFile returned an error: %v", err)
 		}
 
 		if got != true {
@@ -148,25 +148,26 @@ func TestIsPoetryFile(t *testing.T) {
 	t.Run("false if content is not there", func(t *testing.T) {
 		af := afero.Afero{Fs: afero.NewMemMapFs()}
 
-		poetryContent := `[build-system]
-	requires = ["poetry-core>=1.0.0"]
+		flitContent := `[build-system]
+	requires = ["flit"]
 	build-backend = "something else"
 	`
 
-		err := af.WriteFile("pyproject.toml", []byte(poetryContent), 0o755)
+		err := af.WriteFile("pyproject.toml", []byte(flitContent), 0o755)
 		if err != nil {
 			t.Fatalf("could not create file: %v", err)
 		}
 
-		got, err := IsPoetryFile(af, "pyproject.toml")
+		got, err := IsFlitFile(af, "pyproject.toml")
 		if err != nil {
-			t.Errorf("IsPoetryFile returned an error: %v", err)
+			t.Errorf("IsFlitFile returned an error: %v", err)
 		}
 
 		if got != false {
 			t.Errorf("got %v, wanted false", got)
 		}
 	})
+
 	t.Run("false if content is not even close", func(t *testing.T) {
 		af := afero.Afero{Fs: afero.NewMemMapFs()}
 
@@ -177,7 +178,7 @@ func TestIsPoetryFile(t *testing.T) {
 			t.Fatalf("could not create file: %v", err)
 		}
 
-		got, err := IsPoetryFile(af, "pyproject.toml")
+		got, err := IsFlitFile(af, "pyproject.toml")
 		if err != nil {
 			t.Errorf("IsFlitFile returned an error: %v", err)
 		}
