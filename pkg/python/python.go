@@ -7,15 +7,31 @@ import (
 	"fmt"
 	"io"
 	"os/exec"
+	"path/filepath"
 )
 
 // pythonCommand is an internal reassignment of exec.Command
 // used for mocking during tests
-var pythonCommand = exec.Command
+var (
+	pythonCommand = exec.Command
+)
 
 // newPythonCmd returns an exec.Cmd configured with the parameters passed in
+// pointing to whatever python is on $PATH
 func newPythonCmd(cwd string, stdout, stderr io.Writer, args []string) *exec.Cmd {
 	cmd := pythonCommand("python", args...)
+	cmd.Dir = cwd
+	cmd.Stdout = stdout
+	cmd.Stderr = stderr
+
+	return cmd
+}
+
+// newVenvCmd returns an exec.Cmd configured with the parameters passed in
+// pointing to the virtual environment's python
+func newVenvCmd(cwd string, stdout, stderr io.Writer, args []string) *exec.Cmd {
+	python := filepath.Join(cwd, ".venv/bin/python")
+	cmd := pythonCommand(python, args...)
 	cmd.Dir = cwd
 	cmd.Stdout = stdout
 	cmd.Stderr = stderr
@@ -31,6 +47,27 @@ func CreateVenv(cwd string, stdout, stderr io.Writer) error {
 	cmd := newPythonCmd(cwd, stdout, stderr, []string{"-m", "venv", ".venv"})
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("could not create virtual environment: %w", err)
+	}
+
+	return nil
+}
+
+// UpdateSeeds will use the virtual environment's python to update pip, setuptools and wheel
+func UpdateSeeds(cwd string, stdout, stderr io.Writer) error {
+	cmd := newVenvCmd(cwd, stdout, stderr, []string{"-m", "pip", "install", "--upgrade", "pip", "setuptools", "wheel"})
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("could not update seeds: %w", err)
+	}
+
+	return nil
+}
+
+// InstallRequirements will call pip to install into a virtual environment the dependencies
+// specified in a requirements file given by `file`
+func InstallRequirements(cwd string, stdout, stderr io.Writer, file string) error {
+	cmd := newVenvCmd(cwd, stdout, stderr, []string{"-m", "pip", "install", "-r", file})
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("could not update seeds: %w", err)
 	}
 
 	return nil

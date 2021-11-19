@@ -67,6 +67,8 @@ type App struct {
 	fs      afero.Afero    // A filesystem, so we can mock out during tests
 }
 
+// New creates and returns a new App configured with the filesystem, logger
+// and printers
 func New(stdout, stderr io.Writer, fs afero.Fs, printer *msg.Printer) *App {
 	log := logrus.New()
 
@@ -76,7 +78,12 @@ func New(stdout, stderr io.Writer, fs afero.Fs, printer *msg.Printer) *App {
 		log.Level = logrus.DebugLevel
 	}
 
-	log.Formatter = &logrus.TextFormatter{DisableLevelTruncation: true, DisableTimestamp: true}
+	log.Formatter = &logrus.TextFormatter{
+		DisableLevelTruncation: true,
+		DisableTimestamp:       true,
+		ForceQuote:             true,
+	}
+
 	log.Out = stderr
 
 	// Create the afero type and give it the filesystem
@@ -102,17 +109,13 @@ func (a *App) Version() {
 // Run is the entry point to the CLI, this is what gets run when
 // you call `venv` on the terminal
 func (a *App) Run() error {
-	fmt.Fprintln(a.stdout, "App.Run was called")
-
 	switch {
 	case a.cwdHasDir(dotVenvDir):
 		a.logger.WithField("venv directory", dotVenvDir).Debugln("virtual environment directory found")
-		// Nothing to do, just say there's already a venv
 		a.printer.Infof("There is already a virtual environment in this directory: %q", dotVenvDir)
 
 	case a.cwdHasDir(venvDir):
 		a.logger.WithField("venv directory", venvDir).Debugln("virtual environment directory found")
-		// Nothing to do, just say there's already a venv
 		a.printer.Infof("There is already a virtual environment in this directory: %q", venvDir)
 
 	case a.cwdHasFile(reqDev):
