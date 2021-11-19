@@ -24,7 +24,6 @@ const (
 	reqTxt        = "requirements.txt"
 	reqDev        = "requirements_dev.txt"
 	pyProjectTOML = "pyproject.toml"
-	envYAML       = "environment.yml"
 	venvDir       = "venv"
 	dotVenvDir    = ".venv"
 	setupCFG      = "setup.cfg"
@@ -150,13 +149,6 @@ func (a *App) Run() error {
 			// should be an easy toml parse, look for [tool.poetry] or [tool.flit]
 		}
 
-	case a.cwdHasFile(envYAML):
-		a.logger.Debugln(fmt.Sprintf("%s found", envYAML))
-		// Get environment name from environment.yml
-		// check output of conda env list to see if it exists on system
-		// if it does, just say so and exit
-		// if not, create it
-
 	default:
 		a.logger.Debugln("cannot detect environment for project")
 		a.printer.Warn("Cannot auto-detect project environment")
@@ -173,11 +165,8 @@ func (a *App) Run() error {
 		}
 
 		switch next {
-		case "Create (python)":
+		case "Create new Environment":
 			a.printer.Info("Creating a python virtual environment")
-
-		case "Create (conda)":
-			a.printer.Info("Creating a conda virtual environment")
 
 		case "Abort":
 			a.printer.Fail("Aborting!")
