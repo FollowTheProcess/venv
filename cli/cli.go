@@ -90,12 +90,58 @@ func (a *App) Version() {
 func (a *App) Run() error {
 	fmt.Fprintln(a.Stdout, "App.Run was called")
 
-	exists, err := a.cwdHasFile("justfile")
-	if err != nil {
-		return err
+	switch {
+	case a.cwdHasDir(".venv"):
+		a.Logger.WithField("venv directory", ".venv").Debugln("virtual environment directory found")
+		// Nothing to do, just say there's already a venv
+
+	case a.cwdHasDir("venv"):
+		a.Logger.WithField("venv directory", "venv").Debugln("virtual environment directory found")
+		// Nothing to do, just say there's already a venv
+
+	case a.cwdHasFile("requirements_dev.txt"):
+		a.Logger.WithField("requirements file", "requirements_dev.txt").Debugln("requirements file found")
+		// Make a venv and install
+
+	case a.cwdHasFile("requirements.txt"):
+		a.Logger.WithField("requirements file", "requirements.txt").Debugln("requirements file found")
+		// Make a venv and install
+
+	case a.cwdHasFile("pyproject.toml"):
+		a.Logger.Debugln("pyproject.toml found")
+		switch {
+		case a.cwdHasFile("setup.cfg"):
+			a.Logger.WithField("setuptools file", "setup.cfg").Debugln("found setuptools file")
+			// Make a venv and install -e .[dev]
+			// Maybe parse the file to check if has [dev], if yes use that, if not just -e .
+
+		case a.cwdHasFile("setup.py"):
+			a.Logger.WithField("setuptools file", "setup.py").Debugln("found setuptools file")
+			// Same as above branch except parsing a [dev] equivalent might be hard
+			// just do -e .
+
+		default:
+			a.Logger.Debugln("project not setuptools based")
+			a.Logger.Debugln("checking whether it's poetry or flit")
+			// Parse pyproject.toml to determine poetry or flit and make the call
+			// should be an easy toml parse, look for [tool.poetry] or [tool.flit]
+		}
+
+	case a.cwdHasFile("environment.yml"):
+		a.Logger.Debugln("environment.yml found")
+		// Get environment name from environment.yml
+		// check output of conda env list to see if it exists on system
+		// if it does, just say so and exit
+		// if not, create it
+
+	default:
+		a.Logger.Debugln("cannot detect environment for project")
+		// User called `venv` so must want something doing
+		// Prompt for tool to create new environment with and call it
+
 	}
 
-	fmt.Printf("justfile exists: %v\n", exists)
-
+	// We'll only get here if whatever branch was run was successful
+	// so return nil
 	return nil
 }

@@ -21,10 +21,7 @@ func TestApp_cwdHasFile(t *testing.T) {
 		}
 		file.Close()
 
-		got, err := app.cwdHasFile(file.Name())
-		if err != nil {
-			t.Errorf("cwdHasFile returned an error: %v", err)
-		}
+		got := app.cwdHasFile(file.Name())
 
 		if got != true {
 			t.Errorf("cwdHasFile said file %s, does not exist when it does", file.Name())
@@ -32,10 +29,7 @@ func TestApp_cwdHasFile(t *testing.T) {
 	})
 
 	t.Run("returns false if doesn't exist", func(t *testing.T) {
-		got, err := app.cwdHasFile("im_not_here")
-		if err != nil {
-			t.Errorf("cwdHasFile returned an error: %v", err)
-		}
+		got := app.cwdHasFile("im_not_here")
 
 		if got != false {
 			t.Errorf("cwdHasFile said file %s, exists when it doesn't", "im_not_here")
@@ -56,10 +50,7 @@ func TestApp_cwdHasDir(t *testing.T) {
 			t.Fatalf("could not create test dir: %v", err)
 		}
 
-		got, err := app.cwdHasDir("testdir")
-		if err != nil {
-			t.Errorf("cwdHasFile returned an error: %v", err)
-		}
+		got := app.cwdHasDir("testdir")
 
 		if got != true {
 			t.Errorf("cwdHasFile said dir %s, does not exist when it does", "testdir")
@@ -67,10 +58,7 @@ func TestApp_cwdHasDir(t *testing.T) {
 	})
 
 	t.Run("returns false if doesn't exist", func(t *testing.T) {
-		got, err := app.cwdHasFile("im_not_here")
-		if err != nil {
-			t.Errorf("cwdHasFile returned an error: %v", err)
-		}
+		got := app.cwdHasFile("im_not_here")
 
 		if got != false {
 			t.Errorf("cwdHasFile said dir %s, exists when it doesn't", "im_not_here")
