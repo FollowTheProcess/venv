@@ -6,6 +6,8 @@ import (
 	"os/exec"
 	"reflect"
 	"testing"
+
+	"github.com/spf13/afero"
 )
 
 // testCase is used as an env var to pass around so our test helper
@@ -117,4 +119,52 @@ func TestInstall(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestIsPoetryFile(t *testing.T) {
+	t.Run("true if content is there", func(t *testing.T) {
+		af := afero.Afero{Fs: afero.NewMemMapFs()}
+
+		poetryContent := `[build-system]
+	requires = ["poetry-core>=1.0.0"]
+	build-backend = "poetry.core.masonry.api"
+	`
+
+		err := af.WriteFile("pyproject.toml", []byte(poetryContent), 0o755)
+		if err != nil {
+			t.Fatalf("could not create file: %v", err)
+		}
+
+		got, err := IsPoetryFile(af, "pyproject.toml")
+		if err != nil {
+			t.Errorf("IsPoetryFile returned an error: %v", err)
+		}
+
+		if got != true {
+			t.Errorf("got %v, wanted true", got)
+		}
+	})
+
+	t.Run("false if content is not there", func(t *testing.T) {
+		af := afero.Afero{Fs: afero.NewMemMapFs()}
+
+		poetryContent := `[build-system]
+	requires = ["poetry-core>=1.0.0"]
+	build-backend = "something else"
+	`
+
+		err := af.WriteFile("pyproject.toml", []byte(poetryContent), 0o755)
+		if err != nil {
+			t.Fatalf("could not create file: %v", err)
+		}
+
+		got, err := IsPoetryFile(af, "pyproject.toml")
+		if err != nil {
+			t.Errorf("IsPoetryFile returned an error: %v", err)
+		}
+
+		if got != false {
+			t.Errorf("got %v, wanted false", got)
+		}
+	})
 }
