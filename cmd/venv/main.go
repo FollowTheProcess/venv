@@ -7,6 +7,7 @@ import (
 
 	"github.com/FollowTheProcess/msg"
 	"github.com/FollowTheProcess/venv/cli"
+	"github.com/spf13/afero"
 )
 
 var (
@@ -19,7 +20,7 @@ func main() {
 	flag.BoolVar(&help, "help", false, "--help")
 	flag.BoolVar(&version, "version", false, "--version")
 
-	app := cli.New(os.Stdout, os.Stderr)
+	app := cli.New(os.Stdout, os.Stderr, afero.NewOsFs())
 
 	flag.Usage = app.Help
 

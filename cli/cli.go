@@ -9,6 +9,7 @@ import (
 
 	"github.com/fatih/color"
 	"github.com/sirupsen/logrus"
+	"github.com/spf13/afero"
 )
 
 var (
@@ -51,9 +52,10 @@ type App struct {
 	Stdout io.Writer      // Where to write "normal" CLI output
 	Stderr io.Writer      // Debug logs and errors will write here
 	Logger *logrus.Logger // The debug logger
+	FS     afero.Afero
 }
 
-func New(stdout, stderr io.Writer) *App {
+func New(stdout, stderr io.Writer, fs afero.Fs) *App {
 	log := logrus.New()
 
 	// If the VENV_DEBUG environment variable is set to anything
@@ -65,7 +67,10 @@ func New(stdout, stderr io.Writer) *App {
 	log.Formatter = &logrus.TextFormatter{DisableLevelTruncation: true, DisableTimestamp: true}
 	log.Out = stderr
 
-	return &App{Stdout: stdout, Stderr: stderr, Logger: log}
+	// Create the afero type and give it the filesystem
+	af := afero.Afero{Fs: fs}
+
+	return &App{Stdout: stdout, Stderr: stderr, Logger: log, FS: af}
 }
 
 // Help prints venv's help text
@@ -84,5 +89,13 @@ func (a *App) Version() {
 
 func (a *App) Run() error {
 	fmt.Fprintln(a.Stdout, "App.Run was called")
+
+	exists, err := a.cwdHasFile("justfile")
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("justfile exists: %v\n", exists)
+
 	return nil
 }
