@@ -31,7 +31,7 @@ fmt:
 
 # Run all project unit tests
 test *flags: fmt
-    go test -race ./... {{ flags }}
+    go test ./... {{ flags }}
 
 # Lint the project and auto-fix errors if possible
 lint: fmt
@@ -39,7 +39,7 @@ lint: fmt
 
 # Calculate test coverage and render the html
 cover:
-    go test -race -cover -coverprofile={{ COVERAGE_DATA }} ./...
+    go test -cover -coverprofile={{ COVERAGE_DATA }} ./...
     go tool cover -html={{ COVERAGE_DATA }} -o {{ COVERAGE_HTML }}
     open {{ COVERAGE_HTML }}
 
