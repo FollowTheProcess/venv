@@ -54,6 +54,10 @@ check: test lint
 # Run all recipes (other than clean) in a sensible order
 all: build test lint cover
 
+# Run the project with debugging on
+debug: build
+    VENV_DEBUG=1 {{ PROJECT_BIN }}/{{ PROJECT_NAME }}
+
 # Print lines of code (for fun)
 sloc:
     find . -name "*.go" | xargs wc -l | sort -nr
