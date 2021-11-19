@@ -18,7 +18,16 @@ var (
 )
 
 const (
-	helpText = `
+	debugEnv      = "VENV_DEBUG"
+	reqTxt        = "requirements.txt"
+	reqDev        = "requirements_dev.txt"
+	pyProjectTOML = "pyproject.toml"
+	envYAML       = "environment.yml"
+	venvDir       = "venv"
+	dotVenvDir    = ".venv"
+	setupCFG      = "setup.cfg"
+	setupPy       = "setup.py"
+	helpText      = `
 venv
 
 CLI to take the pain out of python virtual environments 🛠
@@ -60,7 +69,7 @@ func New(stdout, stderr io.Writer, fs afero.Fs) *App {
 
 	// If the VENV_DEBUG environment variable is set to anything
 	// set logging level accoringly
-	if debug := os.Getenv("VENV_DEBUG"); debug != "" {
+	if debug := os.Getenv(debugEnv); debug != "" {
 		log.Level = logrus.DebugLevel
 	}
 
@@ -87,36 +96,44 @@ func (a *App) Version() {
 	fmt.Fprintf(a.Stdout, "%s: %s\n", sha, commit)
 }
 
+// Run is the entry point to the CLI, this is what gets run when
+// you call `venv` on the terminal
 func (a *App) Run() error {
 	fmt.Fprintln(a.Stdout, "App.Run was called")
 
+	a.Logger.Debugln("Looking for a virtual environment")
 	switch {
-	case a.cwdHasDir(".venv"):
-		a.Logger.WithField("venv directory", ".venv").Debugln("virtual environment directory found")
+	case a.cwdHasDir(dotVenvDir):
+		a.Logger.WithField("venv directory", dotVenvDir).Debugln("virtual environment directory found")
 		// Nothing to do, just say there's already a venv
 
-	case a.cwdHasDir("venv"):
-		a.Logger.WithField("venv directory", "venv").Debugln("virtual environment directory found")
+	case a.cwdHasDir(venvDir):
+		a.Logger.WithField("venv directory", venvDir).Debugln("virtual environment directory found")
 		// Nothing to do, just say there's already a venv
+	}
 
-	case a.cwdHasFile("requirements_dev.txt"):
-		a.Logger.WithField("requirements file", "requirements_dev.txt").Debugln("requirements file found")
+	a.Logger.Debugln("Looking for a requirements file")
+	switch {
+	case a.cwdHasFile(reqDev):
+		a.Logger.WithField("requirements file", reqDev).Debugln("requirements file found")
 		// Make a venv and install
 
-	case a.cwdHasFile("requirements.txt"):
-		a.Logger.WithField("requirements file", "requirements.txt").Debugln("requirements file found")
+	case a.cwdHasFile(reqTxt):
+		a.Logger.WithField("requirements file", reqTxt).Debugln("requirements file found")
 		// Make a venv and install
+	}
 
-	case a.cwdHasFile("pyproject.toml"):
-		a.Logger.Debugln("pyproject.toml found")
+	a.Logger.Debugln("Looking for python package files")
+	if a.cwdHasFile(pyProjectTOML) {
+		a.Logger.Debugln(fmt.Sprintf("%s found", pyProjectTOML))
 		switch {
-		case a.cwdHasFile("setup.cfg"):
-			a.Logger.WithField("setuptools file", "setup.cfg").Debugln("found setuptools file")
+		case a.cwdHasFile(setupCFG):
+			a.Logger.WithField("setuptools file", setupCFG).Debugln("found setuptools file")
 			// Make a venv and install -e .[dev]
 			// Maybe parse the file to check if has [dev], if yes use that, if not just -e .
 
-		case a.cwdHasFile("setup.py"):
-			a.Logger.WithField("setuptools file", "setup.py").Debugln("found setuptools file")
+		case a.cwdHasFile(setupPy):
+			a.Logger.WithField("setuptools file", setupPy).Debugln("found setuptools file")
 			// Same as above branch except parsing a [dev] equivalent might be hard
 			// just do -e .
 
@@ -126,22 +143,22 @@ func (a *App) Run() error {
 			// Parse pyproject.toml to determine poetry or flit and make the call
 			// should be an easy toml parse, look for [tool.poetry] or [tool.flit]
 		}
+	}
 
-	case a.cwdHasFile("environment.yml"):
-		a.Logger.Debugln("environment.yml found")
+	a.Logger.Debugln("Looking for a conda environment")
+	if a.cwdHasFile(envYAML) {
+		a.Logger.Debugln(fmt.Sprintf("%s found", envYAML))
 		// Get environment name from environment.yml
 		// check output of conda env list to see if it exists on system
 		// if it does, just say so and exit
 		// if not, create it
-
-	default:
-		a.Logger.Debugln("cannot detect environment for project")
-		// User called `venv` so must want something doing
-		// Prompt for tool to create new environment with and call it
-
 	}
 
-	// We'll only get here if whatever branch was run was successful
+	a.Logger.Debugln("cannot detect environment for project")
+	// User called `venv` so must want something doing
+	// Prompt for tool to create new environment with and call it
+
+	// We'll only get here if whatever logical branch was run was successful
 	// so return nil
 	return nil
 }
