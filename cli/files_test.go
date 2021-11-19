@@ -2,20 +2,26 @@ package cli
 
 import (
 	"bytes"
+	"io"
 	"testing"
 
+	"github.com/FollowTheProcess/msg"
 	"github.com/spf13/afero"
 )
+
+func newTestPrinter(stdout io.Writer) *msg.Printer {
+	return &msg.Printer{Out: stdout}
+}
 
 func TestApp_cwdHasFile(t *testing.T) {
 	stdout := &bytes.Buffer{}
 	stderr := &bytes.Buffer{}
 
-	app := New(stdout, stderr, afero.NewMemMapFs())
+	app := New(stdout, stderr, afero.NewMemMapFs(), newTestPrinter(stdout))
 
 	t.Run("returns true if exists", func(t *testing.T) {
 		// Make a file
-		file, err := app.FS.Create("a_file")
+		file, err := app.fs.Create("a_file")
 		if err != nil {
 			t.Fatalf("could not create test file: %v", err)
 		}
@@ -41,11 +47,11 @@ func TestApp_cwdHasDir(t *testing.T) {
 	stdout := &bytes.Buffer{}
 	stderr := &bytes.Buffer{}
 
-	app := New(stdout, stderr, afero.NewMemMapFs())
+	app := New(stdout, stderr, afero.NewMemMapFs(), newTestPrinter(stdout))
 
 	t.Run("returns true if exists", func(t *testing.T) {
 		// Make a dir
-		err := app.FS.Mkdir("testdir", 0o755)
+		err := app.fs.Mkdir("testdir", 0o755)
 		if err != nil {
 			t.Fatalf("could not create test dir: %v", err)
 		}

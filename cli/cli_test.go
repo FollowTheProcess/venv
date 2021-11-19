@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/FollowTheProcess/msg"
 	"github.com/spf13/afero"
 )
 
@@ -13,7 +14,7 @@ func TestApp_Help(t *testing.T) {
 	stdout := &bytes.Buffer{}
 	stderr := &bytes.Buffer{}
 
-	app := New(stdout, stderr, afero.NewMemMapFs())
+	app := New(stdout, stderr, afero.NewMemMapFs(), msg.Default())
 
 	want := fmt.Sprintf("%s\n", helpText)
 
@@ -29,7 +30,7 @@ func TestApp_Version(t *testing.T) {
 	stdout := &bytes.Buffer{}
 	stderr := &bytes.Buffer{}
 
-	app := New(stdout, stderr, afero.NewMemMapFs())
+	app := New(stdout, stderr, afero.NewMemMapFs(), msg.Default())
 
 	// Call version
 	app.Version()
