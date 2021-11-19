@@ -20,7 +20,7 @@ func main() {
 	flag.BoolVar(&help, "help", false, "--help")
 	flag.BoolVar(&version, "version", false, "--version")
 
-	app := cli.New(os.Stdout, os.Stderr, afero.NewOsFs())
+	app := cli.New(os.Stdout, os.Stderr, afero.NewOsFs(), msg.Default())
 
 	flag.Usage = app.Help
 
