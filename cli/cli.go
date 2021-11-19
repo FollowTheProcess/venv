@@ -104,7 +104,6 @@ func (a *App) Version() {
 func (a *App) Run() error {
 	fmt.Fprintln(a.stdout, "App.Run was called")
 
-	a.logger.Debugln("Looking for a virtual environment")
 	switch {
 	case a.cwdHasDir(dotVenvDir):
 		a.logger.WithField("venv directory", dotVenvDir).Debugln("virtual environment directory found")
@@ -115,10 +114,7 @@ func (a *App) Run() error {
 		a.logger.WithField("venv directory", venvDir).Debugln("virtual environment directory found")
 		// Nothing to do, just say there's already a venv
 		a.printer.Infof("There is already a virtual environment in this directory: %q", venvDir)
-	}
 
-	a.logger.Debugln("Looking for a requirements file")
-	switch {
 	case a.cwdHasFile(reqDev):
 		a.logger.WithField("requirements file", reqDev).Debugln("requirements file found")
 		// Make a venv and install
@@ -128,10 +124,8 @@ func (a *App) Run() error {
 		a.logger.WithField("requirements file", reqTxt).Debugln("requirements file found")
 		// Make a venv and install
 		a.printer.Infof("Found %q. Creating virtual environment and installing requirements", reqDev)
-	}
 
-	a.logger.Debugln("Looking for python package files")
-	if a.cwdHasFile(pyProjectTOML) {
+	case a.cwdHasFile(pyProjectTOML):
 		a.logger.Debugln(fmt.Sprintf("%s found", pyProjectTOML))
 		switch {
 		case a.cwdHasFile(setupCFG):
@@ -152,50 +146,44 @@ func (a *App) Run() error {
 			// Parse pyproject.toml to determine poetry or flit and make the call
 			// should be an easy toml parse, look for [tool.poetry] or [tool.flit]
 		}
-	}
 
-	a.logger.Debugln("Looking for a conda environment")
-	if a.cwdHasFile(envYAML) {
+	case a.cwdHasFile(envYAML):
 		a.logger.Debugln(fmt.Sprintf("%s found", envYAML))
 		// Get environment name from environment.yml
 		// check output of conda env list to see if it exists on system
 		// if it does, just say so and exit
 		// if not, create it
-	}
-
-	a.logger.Debugln("cannot detect environment for project")
-	a.printer.Warn("Cannot auto-detect project environment")
-	// User called `venv` so must want something doing
-	// Prompt for tool to create new environment with and call it
-
-	next := ""
-	prompt := &survey.Select{
-		Message: "What next?",
-		Options: []string{"Create (python)", "Create (flit)", "Create (poetry)", "Create (conda)", "Abort"},
-	}
-	if err := survey.AskOne(prompt, &next); err != nil {
-		return fmt.Errorf("could not generate prompt: %w", err)
-	}
-
-	switch next {
-	case "Create (python)":
-		a.printer.Info("Creating a python virtual environment")
-
-	case "Create (flit)":
-		a.printer.Info("Creating a flit virtual environment")
-
-	case "Create (poetry)":
-		a.printer.Info("Creating a poetry virtual environment")
-
-	case "Create (conda)":
-		a.printer.Info("Creating a conda virtual environment")
-
-	case "Abort":
-		a.printer.Fail("Aborting!")
 
 	default:
-		// This should never happen
-		return fmt.Errorf("somehow entered an unrecognised option in prompt: %s", next)
+		a.logger.Debugln("cannot detect environment for project")
+		a.printer.Warn("Cannot auto-detect project environment")
+		// User called `venv` so must want something doing
+		// Prompt for tool to create new environment with and call it
+
+		next := ""
+		prompt := &survey.Select{
+			Message: "What's next?",
+			Options: []string{"Create (python)", "Create (conda)", "Abort"},
+		}
+		if err := survey.AskOne(prompt, &next); err != nil {
+			return fmt.Errorf("could not generate prompt: %w", err)
+		}
+
+		switch next {
+		case "Create (python)":
+			a.printer.Info("Creating a python virtual environment")
+
+		case "Create (conda)":
+			a.printer.Info("Creating a conda virtual environment")
+
+		case "Abort":
+			a.printer.Fail("Aborting!")
+
+		default:
+			// This should never happen
+			return fmt.Errorf("somehow entered an unrecognised option in prompt: %s", next)
+		}
+
 	}
 
 	// We'll only get here if whatever logical branch was run was successful
