@@ -72,3 +72,16 @@ func InstallRequirements(cwd string, stdout, stderr io.Writer, file string) erro
 
 	return nil
 }
+
+// Install is a wrapper around the virtual environment's pip install
+// installArgs are effectively passed to "python -m pip install ..."
+func Install(cwd string, stdout, stderr io.Writer, installArgs []string) error {
+	args := []string{"-m", "pip", "install"}
+	args = append(args, installArgs...)
+	cmd := newVenvCmd(cwd, stdout, stderr, args)
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("could not install %v: %w", installArgs, err)
+	}
+
+	return nil
+}

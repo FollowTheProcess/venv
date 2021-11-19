@@ -9,6 +9,9 @@ import (
 
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/FollowTheProcess/msg"
+	"github.com/FollowTheProcess/venv/pkg/flit"
+	"github.com/FollowTheProcess/venv/pkg/poetry"
+	"github.com/FollowTheProcess/venv/pkg/python"
 	"github.com/fatih/color"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/afero"
@@ -107,7 +110,14 @@ func (a *App) Version() {
 
 // Run is the entry point to the CLI, this is what gets run when
 // you call `venv` on the terminal
-func (a *App) Run() error {
+func (a *App) Run() error { // nolint: gocyclo
+	// gocyclo moans because too many switches but realistically this is the easiest
+	// way of handling it
+	cwd, err := os.Getwd()
+	if err != nil {
+		return fmt.Errorf("could not get cwd: %w", err)
+	}
+
 	switch {
 	case a.cwdHasDir(dotVenvDir):
 		a.logger.WithField("venv directory", dotVenvDir).Debugln("virtual environment directory found")
@@ -121,11 +131,29 @@ func (a *App) Run() error {
 		a.logger.WithField("requirements file", reqDev).Debugln("requirements file found")
 		// Make a venv and install
 		a.printer.Infof("Found %q. Creating virtual environment and installing requirements", reqDev)
+		if err := python.CreateVenv(cwd, a.stdout, a.stderr); err != nil {
+			return fmt.Errorf("%w", err)
+		}
+		if err := python.UpdateSeeds(cwd, a.stdout, a.stderr); err != nil {
+			return fmt.Errorf("%w", err)
+		}
+		if err := python.InstallRequirements(cwd, a.stdout, a.stderr, reqDev); err != nil {
+			return fmt.Errorf("%w", err)
+		}
 
 	case a.cwdHasFile(reqTxt):
 		a.logger.WithField("requirements file", reqTxt).Debugln("requirements file found")
 		// Make a venv and install
-		a.printer.Infof("Found %q. Creating virtual environment and installing requirements", reqDev)
+		a.printer.Infof("Found %q. Creating virtual environment and installing requirements", reqTxt)
+		if err := python.CreateVenv(cwd, a.stdout, a.stderr); err != nil {
+			return fmt.Errorf("%w", err)
+		}
+		if err := python.UpdateSeeds(cwd, a.stdout, a.stderr); err != nil {
+			return fmt.Errorf("%w", err)
+		}
+		if err := python.InstallRequirements(cwd, a.stdout, a.stderr, reqTxt); err != nil {
+			return fmt.Errorf("%w", err)
+		}
 
 	case a.cwdHasFile(pyProjectTOML):
 		a.logger.Debugln(fmt.Sprintf("%s found", pyProjectTOML))
@@ -135,18 +163,55 @@ func (a *App) Run() error {
 			a.printer.Infof("Found %q with %q. Creating virtual environment and installing dependencies (setuptools)", pyProjectTOML, setupCFG)
 			// Make a venv and install -e .[dev]
 			// Maybe parse the file to check if has [dev], if yes use that, if not just -e .
+			if err := python.CreateVenv(cwd, a.stdout, a.stderr); err != nil {
+				return fmt.Errorf("%w", err)
+			}
+			if err := python.UpdateSeeds(cwd, a.stdout, a.stderr); err != nil {
+				return fmt.Errorf("%w", err)
+			}
+			if err := python.Install(cwd, a.stdout, a.stderr, []string{"-e", ".[dev]"}); err != nil {
+				return fmt.Errorf("%w", err)
+			}
 
 		case a.cwdHasFile(setupPy):
 			a.logger.WithField("setuptools file", setupPy).Debugln("found setuptools file")
 			a.printer.Infof("Found %q with %q. Creating virtual environment and installing dependencies (setuptools)", pyProjectTOML, setupPy)
 			// Same as above branch except parsing a [dev] equivalent might be hard
 			// just do -e .
+			if err := python.CreateVenv(cwd, a.stdout, a.stderr); err != nil {
+				return fmt.Errorf("%w", err)
+			}
+			if err := python.UpdateSeeds(cwd, a.stdout, a.stderr); err != nil {
+				return fmt.Errorf("%w", err)
+			}
+			if err := python.Install(cwd, a.stdout, a.stderr, []string{"-e", "."}); err != nil {
+				return fmt.Errorf("%w", err)
+			}
 
 		default:
 			a.logger.Debugln("project not setuptools based")
 			a.logger.Debugln("checking whether it's poetry or flit")
 			// Parse pyproject.toml to determine poetry or flit and make the call
 			// should be an easy toml parse, look for [tool.poetry] or [tool.flit]
+			poetryFile, err := poetry.IsPoetryFile(a.fs, pyProjectTOML)
+			if err != nil {
+				return fmt.Errorf("%w", err)
+			}
+			flitFile, err := flit.IsFlitFile(a.fs, pyProjectTOML)
+			if err != nil {
+				return fmt.Errorf("%w", err)
+			}
+
+			switch {
+			case poetryFile:
+				if err := poetry.Install(cwd, a.stdout, a.stderr); err != nil {
+					return fmt.Errorf("%w", err)
+				}
+			case flitFile:
+				if err := flit.Install(cwd, a.stdout, a.stderr); err != nil {
+					return fmt.Errorf("%w", err)
+				}
+			}
 		}
 
 	default:
