@@ -32,8 +32,6 @@ const (
 	setupCFG      = "setup.cfg"
 	setupPy       = "setup.py"
 	helpText      = `
-venv
-
 CLI to take the pain out of python virtual environments 🛠
 
 venv aims to eliminate all the pain and hastle from creating, installing,
@@ -204,10 +202,14 @@ func (a *App) Run() error { // nolint: gocyclo
 
 			switch {
 			case poetryFile:
+				a.logger.WithField("file", pyProjectTOML).Debugln("project file specifies poetry")
+				a.printer.Infof("Found %q specifying poetry. Installing...", pyProjectTOML)
 				if err := poetry.Install(cwd, a.stdout, a.stderr); err != nil {
 					return fmt.Errorf("%w", err)
 				}
 			case flitFile:
+				a.logger.WithField("file", pyProjectTOML).Debugln("project file specifies flit")
+				a.printer.Infof("Found %q specifying flit. Installing...", pyProjectTOML)
 				if err := flit.Install(cwd, a.stdout, a.stderr); err != nil {
 					return fmt.Errorf("%w", err)
 				}
@@ -223,7 +225,7 @@ func (a *App) Run() error { // nolint: gocyclo
 		next := ""
 		prompt := &survey.Select{
 			Message: "What's next?",
-			Options: []string{"Create (python)", "Create (conda)", "Abort"},
+			Options: []string{"Create a new Environment", "Abort"},
 		}
 		if err := survey.AskOne(prompt, &next); err != nil {
 			return fmt.Errorf("could not generate prompt: %w", err)
@@ -231,7 +233,13 @@ func (a *App) Run() error { // nolint: gocyclo
 
 		switch next {
 		case "Create new Environment":
-			a.printer.Info("Creating a python virtual environment")
+			a.printer.Info("Creating a new python virtual environment")
+			if err := python.CreateVenv(cwd, a.stdout, a.stderr); err != nil {
+				return fmt.Errorf("%w", err)
+			}
+			if err := python.UpdateSeeds(cwd, a.stdout, a.stderr); err != nil {
+				return fmt.Errorf("%w", err)
+			}
 
 		case "Abort":
 			a.printer.Fail("Aborting!")
@@ -245,5 +253,6 @@ func (a *App) Run() error { // nolint: gocyclo
 
 	// We'll only get here if whatever logical branch was run was successful
 	// so return nil
+	a.printer.Good("Done")
 	return nil
 }
