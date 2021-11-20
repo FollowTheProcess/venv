@@ -7,7 +7,7 @@ before:
 builds:
   - id: "venv"
     dir: "."
-    main: ".cmd/venv"
+    main: "./cmd/venv"
     binary: "venv"
     ldflags:
       - -s -w
