@@ -11,8 +11,8 @@ builds:
     binary: "venv"
     ldflags:
       - -s -w
-      - -X github.com/FollowTheProcess/venv/cli/cmd.version={{.Version}}
-      - -X github.com/FollowTheProcess/venv/cli/cmd.commit={{.Commit}}
+      - -X github.com/FollowTheProcess/venv/cli.version={{.Version}}
+      - -X github.com/FollowTheProcess/venv/cli.commit={{.Commit}}
     env:
       - CGO_ENABLED=0
     goos:
