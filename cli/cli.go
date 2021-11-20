@@ -23,15 +23,17 @@ var (
 )
 
 const (
-	debugEnv      = "VENV_DEBUG"
-	reqTxt        = "requirements.txt"
-	reqDev        = "requirements_dev.txt"
-	pyProjectTOML = "pyproject.toml"
-	venvDir       = "venv"
-	dotVenvDir    = ".venv"
-	setupCFG      = "setup.cfg"
-	setupPy       = "setup.py"
-	helpText      = `
+	debugEnv        = "VENV_DEBUG"
+	reqTxt          = "requirements.txt"
+	reqDev          = "requirements_dev.txt"
+	pyProjectTOML   = "pyproject.toml"
+	venvDir         = "venv"
+	dotVenvDir      = ".venv"
+	setupCFG        = "setup.cfg"
+	setupPy         = "setup.py"
+	createNewOption = "Create a new Environment"
+	abortOption     = "Abort"
+	helpText        = `
 CLI to take the pain out of python virtual environments 🛠
 
 venv aims to eliminate all the pain and hastle from creating and managing
@@ -230,14 +232,14 @@ func (a *App) Run() error { // nolint: gocyclo
 		next := ""
 		prompt := &survey.Select{
 			Message: "What's next?",
-			Options: []string{"Create a new Environment", "Abort"},
+			Options: []string{createNewOption, abortOption},
 		}
 		if err := survey.AskOne(prompt, &next); err != nil {
 			return fmt.Errorf("could not generate prompt: %w", err)
 		}
 
 		switch next {
-		case "Create new Environment":
+		case createNewOption:
 			a.printer.Info("Creating a new python virtual environment")
 			if err := python.CreateVenv(cwd, a.stdout, a.stderr); err != nil {
 				return fmt.Errorf("%w", err)
@@ -246,7 +248,7 @@ func (a *App) Run() error { // nolint: gocyclo
 				return fmt.Errorf("%w", err)
 			}
 
-		case "Abort":
+		case abortOption:
 			a.printer.Fail("Aborting!")
 			return nil
 
