@@ -34,11 +34,17 @@ const (
 	helpText      = `
 CLI to take the pain out of python virtual environments 🛠
 
-venv aims to eliminate all the pain and hastle from creating, installing,
-and managing python virtual environments
+venv aims to eliminate all the pain and hastle from creating and managing
+python virtual environments as well as installing project dependencies.
 
 It does this by trying to work out what it is you want it to do based on
 context in the surrounding directory/project.
+
+For the full logical flow followed by venv, see the README
+at https://github.com/FollowTheProcess/venv
+
+If it gets to the end of this flow without figuring out what to do
+it will ask you!
 
 Usage:
 
@@ -50,7 +56,7 @@ Examples:
 $ venv
 
 Flags:
-  -h, --help      Help for py
+  -h, --help      Help for venv
   -v, --version   Show venv's version info
 
 Environment Variables:
@@ -110,7 +116,7 @@ func (a *App) Version() {
 // you call `venv` on the terminal
 func (a *App) Run() error { // nolint: gocyclo
 	// gocyclo moans because too many switches but realistically this is the easiest
-	// way of handling it
+	// way of handling it and ensuring only one branch is executed
 	cwd, err := os.Getwd()
 	if err != nil {
 		return fmt.Errorf("could not get cwd: %w", err)
@@ -160,7 +166,7 @@ func (a *App) Run() error { // nolint: gocyclo
 			a.logger.WithField("setuptools file", setupCFG).Debugln("found setuptools file")
 			a.printer.Infof("Found %q with %q. Creating virtual environment and installing dependencies (setuptools)", pyProjectTOML, setupCFG)
 			// Make a venv and install -e .[dev]
-			// Maybe parse the file to check if has [dev], if yes use that, if not just -e .
+			// If the project does not define [dev] extras, pip will automatically fall back to -e . for us
 			if err := python.CreateVenv(cwd, a.stdout, a.stderr); err != nil {
 				return fmt.Errorf("%w", err)
 			}
@@ -174,8 +180,8 @@ func (a *App) Run() error { // nolint: gocyclo
 		case a.cwdHasFile(setupPy):
 			a.logger.WithField("setuptools file", setupPy).Debugln("found setuptools file")
 			a.printer.Infof("Found %q with %q. Creating virtual environment and installing dependencies (setuptools)", pyProjectTOML, setupPy)
-			// Same as above branch except parsing a [dev] equivalent might be hard
-			// just do -e .
+			// Since parsing a python file to determine if it has a .[dev] might be tricky
+			// just do a normal -e .
 			if err := python.CreateVenv(cwd, a.stdout, a.stderr); err != nil {
 				return fmt.Errorf("%w", err)
 			}
@@ -190,7 +196,6 @@ func (a *App) Run() error { // nolint: gocyclo
 			a.logger.Debugln("project not setuptools based")
 			a.logger.Debugln("checking whether it's poetry or flit")
 			// Parse pyproject.toml to determine poetry or flit and make the call
-			// should be an easy toml parse, look for [tool.poetry] or [tool.flit]
 			poetryFile, err := poetry.IsPoetryFile(a.fs, pyProjectTOML)
 			if err != nil {
 				return fmt.Errorf("%w", err)
@@ -243,6 +248,7 @@ func (a *App) Run() error { // nolint: gocyclo
 
 		case "Abort":
 			a.printer.Fail("Aborting!")
+			return nil
 
 		default:
 			// This should never happen
@@ -252,7 +258,7 @@ func (a *App) Run() error { // nolint: gocyclo
 	}
 
 	// We'll only get here if whatever logical branch was run was successful
-	// so return nil
+	// so return nil and a Done marker
 	a.printer.Good("Done")
 	return nil
 }
