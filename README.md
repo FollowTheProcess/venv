@@ -49,11 +49,9 @@ The logical flow thet `venv` goes through to determine what to do with your proj
    2. If it finds a `pyproject.toml` on it's own, it checks whether or not the file specifies a [poetry] or a [flit] based project. Making the appropriate call to whichever it finds
 5. Now we're out of ideas! If we get here, `venv` will announce it cannot auto-detect the appropriate environment and ask you what you want to do next! You'll have the option to create a new environment or simply exit and take manual control
 
-All output from the underlying calls is exposed back to the terminal so you can see everything that is happening. If you want some additional debugging information, you can set the `VENV_DEBUG` environment variable to 1 before running the program:
+All output from the underlying calls is exposed back to the terminal so you can see everything that is happening. If you want some additional debugging information, you can set the `VENV_DEBUG` environment variable to 1 before running the program and you should see something like this:
 
-```shell
-VENV_DEBUG=1 venv
-```
+![debug demo](https://github.com/FollowTheProcess/venv/raw/main/docs/debug_demo.png)
 
 [GitHub Releases]: https://github.com/FollowTheProcess/venv/releases
 [poetry]: https://python-poetry.org
