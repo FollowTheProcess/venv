@@ -48,6 +48,11 @@ at https://github.com/FollowTheProcess/venv
 If it gets to the end of this flow without figuring out what to do
 it will ask you!
 
+You may also bypass the interactive prompt entirely by passing either
+the '-c/--create' or the '-a/--abort' flag which are equivalent to answering
+their interactive counterparts but bypass the interactive prompt so that
+venv can be used in scripts without interruption.
+
 Usage:
 
   venv [flags]
@@ -60,6 +65,8 @@ $ venv
 Flags:
   -h, --help      Help for venv
   -v, --version   Show venv's version info
+  -c, --create    Bypass interactive prompt, telling it to create a new virtual environment
+  -a, --abort     Bypass interactive prompt, telling it to abort and exit
 
 Environment Variables:
   VENV_DEBUG   If set to anything will print debug information to stderr
@@ -116,26 +123,33 @@ func (a *App) Version() {
 
 // Run is the entry point to the CLI, this is what gets run when
 // you call `venv` on the terminal
-func (a *App) Run() error { // nolint: gocyclo
-	// gocyclo moans because too many switches but realistically this is the easiest
-	// way of handling it and ensuring only one branch is executed
+func (a *App) Run(create, abort bool) error { // nolint: gocyclo
+	// gocyclo moans because of too many switches but realistically this is the easiest
+	// way of handling it and ensuring only one logical branch is executed
 	cwd, err := os.Getwd()
 	if err != nil {
 		return fmt.Errorf("could not get cwd: %w", err)
 	}
 
+	if create && abort {
+		// These flags are mutually exclusive
+		return fmt.Errorf("--create and --abort are mutually exclusive")
+	}
+
 	switch {
 	case a.cwdHasDir(dotVenvDir):
+		// .venv found in cwd
 		a.logger.WithField("venv directory", dotVenvDir).Debugln("virtual environment directory found")
 		a.printer.Infof("There is already a virtual environment in this directory: %q", dotVenvDir)
 
 	case a.cwdHasDir(venvDir):
+		// venv found in cwd
 		a.logger.WithField("venv directory", venvDir).Debugln("virtual environment directory found")
 		a.printer.Infof("There is already a virtual environment in this directory: %q", venvDir)
 
 	case a.cwdHasFile(reqDev):
+		// requirements_dev.txt found in cwd
 		a.logger.WithField("requirements file", reqDev).Debugln("requirements file found")
-		// Make a venv and install
 		a.printer.Infof("Found %q. Creating virtual environment and installing requirements", reqDev)
 		if err := python.CreateVenv(cwd, a.stdout, a.stderr); err != nil {
 			return fmt.Errorf("%w", err)
@@ -148,8 +162,8 @@ func (a *App) Run() error { // nolint: gocyclo
 		}
 
 	case a.cwdHasFile(reqTxt):
+		// requirements.txt found in cwd
 		a.logger.WithField("requirements file", reqTxt).Debugln("requirements file found")
-		// Make a venv and install
 		a.printer.Infof("Found %q. Creating virtual environment and installing requirements", reqTxt)
 		if err := python.CreateVenv(cwd, a.stdout, a.stderr); err != nil {
 			return fmt.Errorf("%w", err)
@@ -162,9 +176,11 @@ func (a *App) Run() error { // nolint: gocyclo
 		}
 
 	case a.cwdHasFile(pyProjectTOML):
+		// pyproject.toml found in cwd
 		a.logger.Debugln(fmt.Sprintf("%s found", pyProjectTOML))
 		switch {
 		case a.cwdHasFile(setupCFG):
+			// pyproject.toml + setup.cfg found in cwd
 			a.logger.WithField("setuptools file", setupCFG).Debugln("found setuptools file")
 			a.printer.Infof("Found %q with %q. Creating virtual environment and installing dependencies (setuptools)", pyProjectTOML, setupCFG)
 			// Make a venv and install -e .[dev]
@@ -180,6 +196,7 @@ func (a *App) Run() error { // nolint: gocyclo
 			}
 
 		case a.cwdHasFile(setupPy):
+			// pyproject.toml + setup.py found in cwd
 			a.logger.WithField("setuptools file", setupPy).Debugln("found setuptools file")
 			a.printer.Infof("Found %q with %q. Creating virtual environment and installing dependencies (setuptools)", pyProjectTOML, setupPy)
 			// Since parsing a python file to determine if it has a .[dev] might be tricky
@@ -195,6 +212,7 @@ func (a *App) Run() error { // nolint: gocyclo
 			}
 
 		default:
+			// pyproject.toml found on it's own in cwd
 			a.logger.Debugln("project not setuptools based")
 			a.logger.Debugln("checking whether it's poetry or flit")
 			// Parse pyproject.toml to determine poetry or flit and make the call
@@ -209,12 +227,15 @@ func (a *App) Run() error { // nolint: gocyclo
 
 			switch {
 			case poetryFile:
+				// pyproject.toml is a poetry spec
 				a.logger.WithField("file", pyProjectTOML).Debugln("project file specifies poetry")
 				a.printer.Infof("Found %q specifying poetry. Installing...", pyProjectTOML)
 				if err := poetry.Install(cwd, a.stdout, a.stderr); err != nil {
 					return fmt.Errorf("%w", err)
 				}
+
 			case flitFile:
+				// pyproject.toml is a flit spec
 				a.logger.WithField("file", pyProjectTOML).Debugln("project file specifies flit")
 				a.printer.Infof("Found %q specifying flit. Installing...", pyProjectTOML)
 				if err := flit.Install(cwd, a.stdout, a.stderr); err != nil {
@@ -227,19 +248,16 @@ func (a *App) Run() error { // nolint: gocyclo
 		a.logger.Debugln("cannot detect environment for project")
 		a.printer.Warn("Cannot auto-detect project environment")
 		// User called `venv` so must want something doing
-		// Prompt for tool to create new environment with and call it
+		// check create or abort flags or prompt for what to do next
 
-		next := ""
-		prompt := &survey.Select{
-			Message: "What's next?",
-			Options: []string{createNewOption, abortOption},
-		}
-		if err := survey.AskOne(prompt, &next); err != nil {
-			return fmt.Errorf("could not generate prompt: %w", err)
-		}
+		switch {
+		case abort:
+			// User passed --abort
+			a.printer.Fail("Aborting!")
+			return nil
 
-		switch next {
-		case createNewOption:
+		case create:
+			// User passed --create
 			a.printer.Info("Creating a new python virtual environment")
 			if err := python.CreateVenv(cwd, a.stdout, a.stderr); err != nil {
 				return fmt.Errorf("%w", err)
@@ -248,13 +266,36 @@ func (a *App) Run() error { // nolint: gocyclo
 				return fmt.Errorf("%w", err)
 			}
 
-		case abortOption:
-			a.printer.Fail("Aborting!")
-			return nil
-
 		default:
-			// This should never happen
-			return fmt.Errorf("somehow entered an unrecognised option in prompt: %s", next)
+			// User didn't pass the flags so prompt for what to do next
+			next := ""
+			prompt := &survey.Select{
+				Message: "What's next?",
+				Options: []string{createNewOption, abortOption},
+			}
+			if err := survey.AskOne(prompt, &next); err != nil {
+				return fmt.Errorf("could not generate prompt: %w", err)
+			}
+
+			switch next {
+			case createNewOption:
+				a.printer.Info("Creating a new python virtual environment")
+				if err := python.CreateVenv(cwd, a.stdout, a.stderr); err != nil {
+					return fmt.Errorf("%w", err)
+				}
+				if err := python.UpdateSeeds(cwd, a.stdout, a.stderr); err != nil {
+					return fmt.Errorf("%w", err)
+				}
+
+			case abortOption:
+				a.printer.Fail("Aborting!")
+				return nil
+
+			default:
+				// This should never happen
+				return fmt.Errorf("somehow entered an unrecognised option in prompt: %s", next)
+			}
+
 		}
 
 	}

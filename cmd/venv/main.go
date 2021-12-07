@@ -13,12 +13,16 @@ import (
 var (
 	help    bool // The --help flag
 	version bool // The --version flag
+	create  bool // The --create flag to bypass the interactive prompt
+	abort   bool // The --abort flag to bypass the interactive prompt
 )
 
 func main() {
 	// Set up flags
 	flag.BoolVar(&help, "help", false, "--help")
 	flag.BoolVar(&version, "version", false, "--version")
+	flag.BoolVar(&create, "create", false, "--create")
+	flag.BoolVar(&abort, "abort", false, "--abort")
 
 	app := cli.New(os.Stdout, os.Stderr, afero.NewOsFs(), msg.Default())
 
@@ -41,7 +45,7 @@ func main() {
 		app.Version()
 	default:
 		// Run the actual program
-		if err := app.Run(); err != nil {
+		if err := app.Run(create, abort); err != nil {
 			prefix := msg.Sfail("Error:")
 			msg.Textf("%s %s", prefix, err)
 			os.Exit(1)
