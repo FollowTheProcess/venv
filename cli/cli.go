@@ -69,8 +69,7 @@ Flags:
   -a, --abort     Bypass interactive prompt, telling it to abort and exit
 
 Environment Variables:
-  VENV_DEBUG   If set to anything will print debug information to stderr
-`
+  VENV_DEBUG   If set to anything will print debug information to stderr`
 )
 
 // App represents the venv CLI program
