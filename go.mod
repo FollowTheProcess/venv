@@ -8,7 +8,7 @@ require (
 	github.com/fatih/color v1.13.0
 	github.com/pelletier/go-toml/v2 v2.0.0-beta.5
 	github.com/sirupsen/logrus v1.8.1
-	github.com/spf13/afero v1.8.1
+	github.com/spf13/afero v1.8.2
 )
 
 require (
