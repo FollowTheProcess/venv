@@ -3,7 +3,7 @@ module github.com/FollowTheProcess/venv
 go 1.17
 
 require (
-	github.com/AlecAivazis/survey/v2 v2.3.2
+	github.com/AlecAivazis/survey/v2 v2.3.3
 	github.com/FollowTheProcess/msg v0.2.0
 	github.com/fatih/color v1.13.0
 	github.com/pelletier/go-toml/v2 v2.0.0-beta.5
