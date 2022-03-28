@@ -25,7 +25,7 @@ var (
 const (
 	debugEnv        = "VENV_DEBUG"
 	reqTxt          = "requirements.txt"
-	reqDev          = "requirements_dev.txt"
+	reqDev          = "requirements-dev.txt"
 	pyProjectTOML   = "pyproject.toml"
 	venvDir         = "venv"
 	dotVenvDir      = ".venv"
