@@ -42,7 +42,7 @@ venv
 The logical flow thet `venv` goes through to determine what to do with your project is as follows:
 
 1. First it will look to see if there is a `.venv` or a `venv` directory under the current working directory. If there is it will simply say so and exit (unlike in shell scripts, an external program cannot alter the state of the shell that launched it, so we can't activate it for you sorry!)
-2. It will then look for a `requirements_dev.txt`, because in projects where this exists, it typically contains everything needed to work on it. That's why we prefer `requirements_dev.txt` over plain old `requirements.txt`. If it finds one, it will create a python virtual environment and install the requirements from the file.
+2. It will then look for a `requirements_dev.txt`, because in projects where this exists, it typically contains everything needed to work on it. That's why we prefer `requirements-dev.txt` over plain old `requirements.txt`. If it finds one, it will create a python virtual environment and install the requirements from the file.
 3. Failing that, we repeat the same process just this time with the classic `requirements.txt`
 4. Now it looks for a `pyproject.toml`, and will do a few different things if it finds one:
    1. If it finds a `pyproject.toml` with either a `setup.cfg` or a `setup.py`, it knows that the project is based on [setuptools] and will install the project as such. If the setuptools file is a `setup.cfg`, it will attempt to install with `[dev]` extras, falling back to a normal install in all other cases.
