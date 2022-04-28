@@ -6,7 +6,7 @@ require (
 	github.com/AlecAivazis/survey/v2 v2.3.4
 	github.com/FollowTheProcess/msg v0.2.0
 	github.com/fatih/color v1.13.0
-	github.com/pelletier/go-toml/v2 v2.0.0-beta.8
+	github.com/pelletier/go-toml/v2 v2.0.0
 	github.com/sirupsen/logrus v1.8.1
 	github.com/spf13/afero v1.8.2
 )
