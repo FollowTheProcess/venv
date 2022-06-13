@@ -32,9 +32,8 @@ func main() {
 
 	// venv accepts no arguments (for now)
 	if flag.NArg() != 0 {
-		prefix := msg.Sfail("Error:")
 		message := fmt.Sprintf("venv accepts no command line arguments, got: %v", flag.Args())
-		msg.Textf("%s %s", prefix, message)
+		msg.Fail(message)
 		os.Exit(1)
 	}
 
@@ -46,8 +45,7 @@ func main() {
 	default:
 		// Run the actual program
 		if err := app.Run(create, abort); err != nil {
-			prefix := msg.Sfail("Error:")
-			msg.Textf("%s %s", prefix, err)
+			msg.Failf("%s", err)
 			os.Exit(1)
 		}
 	}
